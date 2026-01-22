@@ -1,167 +1,238 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Disparo de Prova – UFF</title>
+  <meta charset="UTF-8" />
+  <title>Prova Online — UFF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-:root {
-  --uff-blue: #003A8F;
-  --bg: #F5F7FA;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: #f2f4f7;
+      color: #333;
+    }
 
-body {
-  font-family: Arial, sans-serif;
-  background: var(--bg);
-  margin: 0;
-}
+    header {
+      background-color: #003366;
+      color: white;
+      padding: 16px 24px;
+    }
 
-header {
-  background: var(--uff-blue);
-  color: white;
-  padding: 20px;
-  text-align: center;
-}
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
 
-main {
-  max-width: 700px;
-  margin: 30px auto;
-  background: white;
-  padding: 25px;
-  border-radius: 8px;
-}
+    header p {
+      margin: 4px 0 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
 
-label {
-  display: block;
-  margin-top: 15px;
-  font-weight: bold;
-}
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
 
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
+    .info {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
 
-small {
-  color: #555;
-}
+    .info div {
+      font-size: 14px;
+    }
 
-button {
-  margin-top: 25px;
-  width: 100%;
-  padding: 14px;
-  background: var(--uff-blue);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
+    .timer {
+      font-weight: bold;
+      color: #005aa7;
+    }
 
-button:hover {
-  opacity: 0.9;
-}
-</style>
+    .question {
+      margin-bottom: 28px;
+    }
+
+    .question h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .alternative {
+      display: block;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .alternative:hover {
+      background-color: #f0f6ff;
+      border-color: #005aa7;
+    }
+
+    .alternative input {
+      margin-right: 8px;
+    }
+
+    button {
+      background-color: #005aa7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #004a8a;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+      margin: 24px 0;
+    }
+  </style>
 </head>
 
 <body>
 
 <header>
   <h1>Universidade Federal Fluminense</h1>
-  <p>Disparo de Prova Online</p>
+  <p>Prova Online — Avaliação Acadêmica</p>
 </header>
 
-<main>
+<div class="container">
 
-<form id="disparoForm">
+  <div class="info">
+    <div><strong>Prova:</strong> <span id="provaId">—</span></div>
+    <div><strong>Início:</strong> <span id="inicio">—</span></div>
+    <div class="timer">Tempo restante: <span id="tempo">--:--</span></div>
+  </div>
 
-  <label>Módulos</label>
-  <select id="modulos" multiple required>
-    <option value="Anestesiologia">Anestesiologia</option>
-    <option value="Dermatologia">Dermatologia</option>
-    <option value="Equilíbrio Hidroeletrolítico">Equilíbrio Hidroeletrolítico</option>
-    <option value="Farmacologia">Farmacologia</option>
-    <option value="Gastroenterologia">Gastroenterologia</option>
-    <option value="Geriatria">Geriatria</option>
-    <option value="Ginecologia">Ginecologia</option>
-    <option value="Imunologia">Imunologia</option>
-    <option value="Nefrologia">Nefrologia</option>
-    <option value="Neonatologia">Neonatologia</option>
-    <option value="Neurologia">Neurologia</option>
-    <option value="Obstetrícia">Obstetrícia</option>
-    <option value="Pneumologia">Pneumologia</option>
-    <option value="Urologia">Urologia</option>
-    <option value="Psiquiatria infantil">Psiquiatria infantil</option>
-  </select>
-  <small>Segure Ctrl para selecionar múltiplos módulos</small>
+  <div id="questoes"></div>
 
-  <label>Assuntos</label>
-  <select id="assuntos" multiple required>
-    <option value="temaA">temaA</option>
-    <option value="temaB">temaB</option>
-    <option value="temaC">temaC</option>
-  </select>
+  <div class="center">
+    <button onclick="enviarRespostas()">Enviar prova</button>
+  </div>
 
-  <label>Tipos de questão</label>
-  <select id="tipos" multiple required>
-    <option value="objetiva">Objetiva</option>
-    <option value="correlacao">Correlação</option>
-  </select>
+</div>
 
-  <label>Quantidade de questões</label>
-  <input id="quantidade" type="number" min="1" required>
-
-  <label>Duração da prova (minutos)</label>
-  <input id="duracao" type="number" min="1" required>
-
-  <label>Data e hora de início</label>
-  <input id="inicio" type="datetime-local" required>
-
-  <button type="submit">Disparar Prova</button>
-
-</form>
-
-</main>
+<footer>
+  © Universidade Federal Fluminense — Sistema de Avaliação Digital
+</footer>
 
 <script>
-const WEBHOOK_WF01 = "https://webhook.artideia.com.br/webhook/criar_prova";
+  const webhookDetalhes = "COLE_AQUI_O_WEBHOOK_DE_DETALHES_DA_PROVA";
+  const webhookResposta = "COLE_AQUI_O_WEBHOOK_DE_ENVIO_DE_RESPOSTAS";
 
-function getMultiValues(selectId) {
-  return [...document.getElementById(selectId).selectedOptions].map(o => o.value);
-}
+  const urlParams = new URLSearchParams(window.location.search);
+  const provaId = urlParams.get("prova");
 
-document.getElementById("disparoForm").onsubmit = async e => {
-  e.preventDefault();
+  let fimProva;
+  let respostas = {};
 
-  const inicioLocal = document.getElementById("inicio").value;
-  const inicioISO = new Date(inicioLocal).toISOString();
+  async function carregarProva() {
+    if (!provaId) {
+      alert("ID da prova não informado.");
+      return;
+    }
 
-  const payload = {
-    modulos: getMultiValues("modulos"),
-    assuntos: getMultiValues("assuntos"),
-    tipos: getMultiValues("tipos"),
-    quantidade: Number(document.getElementById("quantidade").value),
-    duracao_min: Number(document.getElementById("duracao").value),
-    inicio: inicioISO
-  };
+    const res = await fetch(webhookDetalhes, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prova_id: provaId })
+    });
 
-  console.log("Payload enviado:", payload);
+    const data = await res.json();
 
-  const r = await fetch(WEBHOOK_WF01, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+    document.getElementById("provaId").innerText = data.prova_id;
+    document.getElementById("inicio").innerText = new Date(data.inicio).toLocaleString();
 
-  if (r.ok) {
-    alert("Prova disparada com sucesso.");
-  } else {
-    alert("Erro ao disparar a prova.");
+    fimProva = new Date(data.fim);
+
+    renderizarQuestoes(data.questoes);
+    iniciarTimer();
   }
-};
+
+  function renderizarQuestoes(questoes) {
+    const container = document.getElementById("questoes");
+
+    questoes.forEach((q, index) => {
+      const div = document.createElement("div");
+      div.className = "question";
+
+      div.innerHTML = `
+        <h3>${index + 1}. ${q.enunciado}</h3>
+        ${q.alternativas.map(a => `
+          <label class="alternative">
+            <input type="radio" name="q${index}" value="${a.texto}"
+              onchange="respostas['${q.id}'] = '${a.texto}'">
+            ${a.texto}
+          </label>
+        `).join("")}
+      `;
+
+      container.appendChild(div);
+    });
+  }
+
+  function iniciarTimer() {
+    const timerEl = document.getElementById("tempo");
+
+    const interval = setInterval(() => {
+      const agora = new Date();
+      const diff = fimProva - agora;
+
+      if (diff <= 0) {
+        clearInterval(interval);
+        timerEl.innerText = "00:00";
+        enviarRespostas();
+        return;
+      }
+
+      const min = Math.floor(diff / 60000);
+      const sec = Math.floor((diff % 60000) / 1000);
+      timerEl.innerText = `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    }, 1000);
+  }
+
+  async function enviarRespostas() {
+    await fetch(webhookResposta, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prova_id: provaId,
+        respostas,
+        enviado_em: new Date().toISOString()
+      })
+    });
+
+    alert("Prova enviada com sucesso.");
+    window.location.href = "https://www.uff.br";
+  }
+
+  carregarProva();
 </script>
 
 </body>
