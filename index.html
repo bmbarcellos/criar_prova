@@ -1,141 +1,123 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<title>Prova Online — Universidade Federal Fluminense</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Prova Online — UFF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  margin: 0;
-  font-family: "Segoe UI", Roboto, Arial, sans-serif;
-  background-color: #f2f4f7;
-  color: #333;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: #f2f4f7;
+      color: #333;
+    }
 
-header {
-  background: linear-gradient(90deg, #003366, #005aa7);
-  color: white;
-  padding: 18px 24px;
-}
+    header {
+      background-color: #003366;
+      color: white;
+      padding: 16px 24px;
+    }
 
-header h1 {
-  margin: 0;
-  font-size: 20px;
-}
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
 
-header p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  opacity: 0.9;
-}
+    header p {
+      margin: 4px 0 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
 
-.container {
-  max-width: 900px;
-  margin: 24px auto;
-  background: white;
-  border-radius: 10px;
-  padding: 28px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-}
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
 
-.info {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-  gap: 12px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 12px;
-}
+    .info {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
 
-.info div {
-  font-size: 14px;
-}
+    .timer {
+      font-weight: bold;
+      color: #005aa7;
+    }
 
-.timer {
-  font-weight: bold;
-  color: #005aa7;
-}
+    .question {
+      margin-bottom: 28px;
+    }
 
-.question {
-  margin-bottom: 28px;
-}
+    .question h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
 
-.question h3 {
-  font-size: 16px;
-  margin-bottom: 12px;
-}
+    .alternative {
+      display: block;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
 
-.alternative {
-  display: block;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
-}
+    .alternative:hover {
+      background-color: #f0f6ff;
+      border-color: #005aa7;
+    }
 
-.alternative:hover {
-  background-color: #f0f6ff;
-  border-color: #005aa7;
-}
+    button {
+      background-color: #005aa7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
 
-.alternative input {
-  margin-right: 8px;
-}
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
 
-button {
-  background-color: #005aa7;
-  color: white;
-  border: none;
-  padding: 14px 26px;
-  border-radius: 8px;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #004a8a;
-}
-
-.center {
-  text-align: center;
-}
-
-footer {
-  text-align: center;
-  font-size: 12px;
-  color: #777;
-  margin: 24px 0;
-}
-
-.hidden {
-  display: none;
-}
-</style>
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+      margin: 24px 0;
+    }
+  </style>
 </head>
 
 <body>
 
 <header>
   <h1>Universidade Federal Fluminense</h1>
-  <p>Sistema de Avaliação Digital — Prova Online</p>
+  <p>Prova Online — Avaliação Acadêmica</p>
 </header>
 
 <div class="container">
 
   <div class="info">
-    <div><strong>Prova:</strong> <span id="titulo">—</span></div>
-    <div><strong>Início:</strong> <span id="inicio">—</span></div>
+    <div><strong>Prova:</strong> <span id="provaId">—</span></div>
     <div class="timer">Tempo restante: <span id="tempo">--:--</span></div>
   </div>
 
   <div id="questoes"></div>
 
-  <div class="center">
-    <button id="btnEnviar" onclick="enviarRespostas()">Enviar prova</button>
+  <div style="text-align:center">
+    <button id="btnEnviar" onclick="enviarProva()">Enviar prova</button>
   </div>
 
 </div>
@@ -145,143 +127,109 @@ footer {
 </footer>
 
 <script>
-/* ================= CONFIG ================= */
-const WEBHOOK_PROVA_ATIVA = "https://webhook.artideia.com.br/webhook/buscar-prova-ativa";
-const WEBHOOK_ENVIO_RESPOSTAS = "https://SEU_N8N/webhook/enviar-respostas";
+  const WEBHOOK_PROVA = "https://webhook.artideia.com.br/webhook/buscar-prova-ativa";
+  const WEBHOOK_RESPOSTAS = "https://SEU_WEBHOOK/enviar-respostas";
 
-/* ============ SEGURANÇA LOCAL ============= */
-const SESSION_KEY = "UFF_PROVA_SESSION";
-const ENVIO_KEY = "UFF_PROVA_ENVIADA";
+  const params = new URLSearchParams(window.location.search);
+  const provaId = params.get("prova");
 
-/* ============ VARIÁVEIS =================== */
-let fimProva;
-let respostas = {};
-let provaData = null;
-let sessionToken = null;
+  let fimProva;
+  let respostas = {};
+  let enviada = false;
 
-/* ============ INICIALIZAÇÃO =============== */
-function gerarToken() {
-  return crypto.randomUUID();
-}
-
-function initSession() {
-  let token = localStorage.getItem(SESSION_KEY);
-  if (!token) {
-    token = gerarToken();
-    localStorage.setItem(SESSION_KEY, token);
-  }
-  sessionToken = token;
-}
-
-/* ============ CARREGAR PROVA ============== */
-async function carregarProva() {
-
-  if (localStorage.getItem(ENVIO_KEY)) {
-    document.body.innerHTML = "<h2 style='text-align:center;margin-top:40px;'>⚠️ Prova já enviada neste dispositivo.</h2>";
-    return;
+  if (!provaId) {
+    alert("ID da prova não informado.");
+    throw new Error("Prova não informada");
   }
 
-  const res = await fetch(WEBHOOK_PROVA_ATIVA, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" }
-  });
+  async function carregarProva() {
+    const res = await fetch(WEBHOOK_PROVA, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prova_id: provaId })
+    });
 
-  if (!res.ok) {
-    const err = await res.text();
-    alert("Erro ao carregar prova: " + err);
-    return;
-  }
+    const data = await res.json();
 
-  const data = await res.json();
-  provaData = data;
-
-  document.getElementById("titulo").innerText = data.titulo || data.prova_id;
-  document.getElementById("inicio").innerText = new Date(data.inicio).toLocaleString();
-
-  fimProva = new Date(data.fim);
-
-  renderizarQuestoes(data.questoes);
-  iniciarTimer();
-}
-
-/* ============ RENDER ====================== */
-function renderizarQuestoes(questoes) {
-  const container = document.getElementById("questoes");
-  container.innerHTML = "";
-
-  questoes.forEach((q, index) => {
-    const div = document.createElement("div");
-    div.className = "question";
-
-    div.innerHTML = `
-      <h3>${index + 1}. ${q.enunciado}</h3>
-      ${q.alternativas.map(a => `
-        <label class="alternative">
-          <input type="radio" name="q${index}" value="${a.texto}"
-            onchange="respostas['${q.id}'] = '${a.texto}'">
-          ${a.texto}
-        </label>
-      `).join("")}
-    `;
-
-    container.appendChild(div);
-  });
-}
-
-/* ============ TIMER ======================= */
-function iniciarTimer() {
-  const timerEl = document.getElementById("tempo");
-
-  const interval = setInterval(() => {
-    const agora = new Date();
-    const diff = fimProva - agora;
-
-    if (diff <= 0) {
-      clearInterval(interval);
-      timerEl.innerText = "00:00";
-      enviarRespostas(true);
+    if (data.erro) {
+      alert("Prova indisponível.");
       return;
     }
 
-    const min = Math.floor(diff / 60000);
-    const sec = Math.floor((diff % 60000) / 1000);
-    timerEl.innerText = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-  }, 1000);
-}
+    document.getElementById("provaId").innerText = data.prova_id;
+    fimProva = new Date(data.fim);
 
-/* ============ ENVIO ======================= */
-async function enviarRespostas(auto=false) {
+    renderizarQuestoes(data.questoes);
+    iniciarTimer();
+  }
 
-  if (localStorage.getItem(ENVIO_KEY)) return;
+  function renderizarQuestoes(questoes) {
+    const container = document.getElementById("questoes");
 
-  document.getElementById("btnEnviar").disabled = true;
+    questoes.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.className = "question";
 
-  await fetch(WEBHOOK_ENVIO_RESPOSTAS, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prova_id: provaData.prova_id,
-      session_token: sessionToken,
-      respostas,
-      enviado_em: new Date().toISOString(),
-      auto_envio: auto
-    })
-  });
+      let html = `<h3>${i + 1}. ${q.Enunciado}</h3>`;
 
-  localStorage.setItem(ENVIO_KEY, "true");
+      if (q.Tipo_questao === "multipla" && q.Alternativas) {
+        q.Alternativas.forEach((alt, idx) => {
+          html += `
+            <label class="alternative">
+              <input type="radio"
+                     name="q${i}"
+                     value="${alt.texto}"
+                     onchange="respostas['${i}'] = '${alt.texto}'">
+              ${alt.texto}
+            </label>`;
+        });
+      }
 
-  alert("Prova enviada com sucesso.");
-  window.location.href = "https://www.uff.br";
-}
+      div.innerHTML = html;
+      container.appendChild(div);
+    });
+  }
 
-/* ============ BLOQUEIOS =================== */
-window.onbeforeunload = function () {
-  return "A prova está em andamento. Deseja realmente sair?";
-};
+  function iniciarTimer() {
+    const el = document.getElementById("tempo");
 
-/* ============ START ======================= */
-initSession();
-carregarProva();
+    const interval = setInterval(() => {
+      const diff = fimProva - new Date();
+
+      if (diff <= 0) {
+        clearInterval(interval);
+        el.innerText = "00:00";
+        enviarProva();
+        return;
+      }
+
+      const min = Math.floor(diff / 60000);
+      const sec = Math.floor((diff % 60000) / 1000);
+      el.innerText = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+    }, 1000);
+  }
+
+  async function enviarProva() {
+    if (enviada) return;
+
+    enviada = true;
+    document.getElementById("btnEnviar").disabled = true;
+
+    await fetch(WEBHOOK_RESPOSTAS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prova_id: provaId,
+        respostas,
+        enviado_em: new Date().toISOString()
+      })
+    });
+
+    alert("Prova enviada com sucesso.");
+    window.location.href = "https://www.uff.br";
+  }
+
+  carregarProva();
 </script>
 
 </body>
