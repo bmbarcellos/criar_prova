@@ -50,8 +50,6 @@
     .prova-info {
       display: flex;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
       margin-bottom: 24px;
     }
 
@@ -65,7 +63,6 @@
 
     .timer {
       font-weight: bold;
-      font-size: 1rem;
       color: #b91c1c;
     }
 
@@ -73,33 +70,20 @@
       margin-bottom: 32px;
     }
 
-    .questao h3 {
-      margin-bottom: 12px;
-      font-size: 1rem;
-    }
-
-    .alternativas label {
-      display: block;
-      margin-bottom: 8px;
-      cursor: pointer;
-    }
-
-    .alternativas input {
-      margin-right: 8px;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin: 24px 0;
-    }
-
     .erro {
       color: #b91c1c;
       font-weight: bold;
       text-align: center;
-      margin-bottom: 16px;
+    }
+
+    button {
+      background: var(--uff-blue);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
     }
   </style>
 </head>
@@ -107,7 +91,7 @@
 <body>
 
 <header>
-  <img src="https://redeunisustentavel.com.br/uff/wp-content/uploads/2022/03/uff-logo.png" alt="UFF">
+  <img src="https://redeunisustentavel.com.br/uff/wp-content/uploads/2022/03/uff-logo.png">
   <div class="title">Universidade Federal Fluminense</div>
 </header>
 
@@ -116,118 +100,126 @@
 
   <div class="prova-info">
     <div class="badge" id="provaId">Prova</div>
-    <div class="timer" id="cronometro">Carregando tempo...</div>
+    <div class="timer" id="cronometro">Carregando...</div>
   </div>
 
   <div id="questoes"></div>
+
+  <button onclick="submeterProva()">Enviar prova</button>
 </main>
 
-<footer>
-  Sistema de Avaliação Digital – UFF
-</footer>
-
 <script>
-  const WEBHOOK_URL = "https://webhook.artideia.com.br/webhook/renderizar_prova";
-  let intervaloTimer = null;
+const WEBHOOK_URL = "https://webhook.artideia.com.br/webhook/renderizar_prova";
 
-  function mostrarErro(msg) {
-    document.getElementById("mensagemErro").innerText = msg;
+let respostas = JSON.parse(localStorage.getItem("respostas")) || {};
+let tentativasFuga = 0;
+let hashProva = null;
+
+/* 🔐 FULLSCREEN */
+async function entrarFullscreen() {
+  if (!document.fullscreenElement) {
+    await document.documentElement.requestFullscreen();
   }
+}
 
-  // 🔧 Converte "HH:MM:SS" em Date de hoje
-  function criarDataHoje(hora) {
-    const partes = hora.split(":");
-    if (partes.length !== 3) return null;
+/* ⏱️ CRONÔMETRO (hora simples HH:mm:ss) */
+function iniciarCronometro(fimStr) {
+  const [h,m,s] = fimStr.split(":").map(Number);
+  const fim = new Date();
+  fim.setHours(h,m,s,0);
 
-    const agora = new Date();
-    return new Date(
-      agora.getFullYear(),
-      agora.getMonth(),
-      agora.getDate(),
-      Number(partes[0]),
-      Number(partes[1]),
-      Number(partes[2])
-    );
-  }
-
-  function iniciarCronometro(fimHora) {
-    const fim = criarDataHoje(fimHora);
-
-    if (!fim || isNaN(fim.getTime())) {
-      mostrarErro("Erro ao interpretar o horário final da prova.");
+  const timer = setInterval(() => {
+    const diff = fim - new Date();
+    if (diff <= 0) {
+      document.getElementById("cronometro").innerText = "Tempo encerrado";
+      clearInterval(timer);
+      submeterProva();
       return;
     }
+    const min = Math.floor(diff/60000);
+    const seg = Math.floor((diff%60000)/1000);
+    document.getElementById("cronometro").innerText =
+      `Tempo restante: ${min}:${String(seg).padStart(2,"0")}`;
+  },1000);
+}
 
-    function atualizar() {
-      const agora = new Date();
-      const diff = fim - agora;
+/* 💾 AUTOSAVE */
+setInterval(() => {
+  localStorage.setItem("respostas", JSON.stringify(respostas));
+  console.log("Autosave OK");
+}, 60000);
 
-      if (diff <= 0) {
-        document.getElementById("cronometro").innerText = "Tempo encerrado";
-        clearInterval(intervaloTimer);
-        return;
-      }
-
-      const totalSegundos = Math.floor(diff / 1000);
-      const minutos = Math.floor(totalSegundos / 60);
-      const segundos = totalSegundos % 60;
-
-      document.getElementById("cronometro").innerText =
-        `Tempo restante: ${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
-    }
-
-    atualizar();
-    intervaloTimer = setInterval(atualizar, 1000);
+/* 👀 BLOQUEIO DE ABA */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    tentativasFuga++;
+    alert("Troca de aba detectada! Isso está sendo registrado.");
   }
+});
 
-  function renderizarQuestoes(questoes) {
-    const container = document.getElementById("questoes");
-    container.innerHTML = "";
+/* 📄 CARREGAR PROVA */
+async function carregarProva() {
+  await entrarFullscreen();
 
-    questoes.forEach((q, index) => {
-      const div = document.createElement("div");
-      div.className = "questao";
+  const res = await fetch(WEBHOOK_URL);
+  const data = await res.json();
 
-      div.innerHTML = `
-        <h3>${index + 1}. ${q.Enunciado}</h3>
-        <div class="alternativas">
-          ${q.Alternativas.map((alt, i) => `
-            <label>
-              <input type="radio" name="q${index}" value="${i}">
-              ${alt.texto}
-            </label>
-          `).join("")}
-        </div>
-      `;
+  hashProva = data.hash_prova;
+  document.getElementById("provaId").innerText = data.prova_id;
 
-      container.appendChild(div);
-    });
-  }
+  iniciarCronometro(data.fim);
+  renderizarQuestoes(data.questoes);
+}
 
-  async function carregarProva() {
-    try {
-      const response = await fetch(WEBHOOK_URL);
-      const json = await response.json();
+/* 📝 QUESTÕES */
+function renderizarQuestoes(questoes) {
+  const c = document.getElementById("questoes");
+  c.innerHTML = "";
 
-      // ✅ Aceita ARRAY ou OBJETO
-      const data = Array.isArray(json) ? json[0] : json;
+  questoes.forEach((q,i) => {
+    const div = document.createElement("div");
+    div.className = "questao";
+    div.innerHTML = `
+      <h3>${i+1}. ${q.Enunciado}</h3>
+      ${q.Alternativas.map((a,j)=>`
+        <label>
+          <input type="radio" name="q${i}" 
+          onchange="respostas[${i}]='${a.texto}'"
+          ${respostas[i]==a.texto?"checked":""}>
+          ${a.texto}
+        </label>
+      `).join("")}
+    `;
+    c.appendChild(div);
+  });
+}
 
-      if (!data || !data.prova_id || !data.fim || !Array.isArray(data.questoes)) {
-        mostrarErro("Prova não encontrada ou dados inválidos.");
-        return;
-      }
+/* 🔑 HASH DE SUBMISSÃO */
+async function gerarHash(payload) {
+  const msg = JSON.stringify(payload);
+  const buffer = new TextEncoder().encode(msg);
+  const hash = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(hash))
+    .map(b=>b.toString(16).padStart(2,"0")).join("");
+}
 
-      document.getElementById("provaId").innerText = data.prova_id;
-      iniciarCronometro(data.fim);
-      renderizarQuestoes(data.questoes);
+/* 📤 SUBMISSÃO */
+async function submeterProva() {
+  const payload = {
+    hash_prova: hashProva,
+    respostas,
+    tentativasFuga,
+    timestamp: new Date().toISOString()
+  };
 
-    } catch (e) {
-      console.error(e);
-      mostrarErro("Erro ao carregar a prova.");
-    }
-  }
+  payload.hash_envio = await gerarHash(payload);
 
-  carregarProva();
+  console.log("ENVIO FINAL:", payload);
+  alert("Prova enviada com sucesso!");
+  localStorage.clear();
+}
+
+carregarProva();
 </script>
 
 </body>
