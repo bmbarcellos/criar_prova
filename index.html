@@ -2,217 +2,209 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Prova Online — UFF</title>
+  <title>Prova Online</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     body {
-      margin: 0;
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      background-color: #f2f4f7;
-      color: #333;
-    }
-
-    header {
-      background-color: #003366;
-      color: white;
-      padding: 16px 24px;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    header p {
-      margin: 4px 0 0;
-      font-size: 14px;
-      opacity: 0.9;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
     }
 
     .container {
       max-width: 900px;
-      margin: 24px auto;
-      background: white;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
       border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin-top: 0;
     }
 
     .info {
       display: flex;
       justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-      gap: 12px;
-    }
-
-    .timer {
+      margin-bottom: 20px;
       font-weight: bold;
-      color: #005aa7;
     }
 
     .question {
-      margin-bottom: 28px;
-    }
-
-    .question h3 {
-      font-size: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #ddd;
     }
 
     .alternative {
       display: block;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      margin: 6px 0;
       cursor: pointer;
-    }
-
-    .alternative:hover {
-      background-color: #f0f6ff;
-      border-color: #005aa7;
     }
 
     button {
-      background-color: #005aa7;
-      color: white;
-      border: none;
       padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 15px;
+      font-size: 16px;
       cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: #1976d2;
+      color: white;
     }
 
     button:disabled {
-      background-color: #999;
+      background: #999;
       cursor: not-allowed;
+    }
+
+    .timer {
+      color: #d32f2f;
     }
   </style>
 </head>
 
 <body>
+  <div class="container">
+    <h1>Prova Online</h1>
 
-<header>
-  <h1>Universidade Federal Fluminense</h1>
-  <p>Prova Online — Avaliação Acadêmica</p>
-</header>
+    <div class="info">
+      <div>ID da Prova: <span id="provaId">---</span></div>
+      <div class="timer">Tempo restante: <span id="tempo">--:--</span></div>
+    </div>
 
-<div class="container">
+    <div id="questoes"></div>
 
-  <div class="info">
-    <div><strong>Prova:</strong> <span id="provaId">—</span></div>
-    <div class="timer">Tempo restante: <span id="tempo">--:--</span></div>
+    <button id="btnEnviar" onclick="enviarProva()">Enviar Prova</button>
   </div>
 
-  <div id="questoes"></div>
+  <script>
+    // 🔗 WEBHOOKS
+    const WEBHOOK_PROVA = "https://webhook.artideia.com.br/webhook/buscar-prova-ativa";
+    const WEBHOOK_RESPOSTAS = "https://SEU_WEBHOOK/enviar-respostas";
 
-  <div style="text-align:center">
-    <button id="btnEnviar" onclick="enviarProva()">Enviar prova</button>
-  </div>
+    let provaId = null;
+    let fimProva = null;
+    let respostas = {};
+    let enviada = false;
 
-</div>
+    async function carregarProva() {
+      try {
+        const res = await fetch(WEBHOOK_PROVA, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        });
 
-<script>
-  const WEBHOOK_PROVA = "https://webhook.artideia.com.br/webhook/buscar-prova-ativa";
-  const WEBHOOK_RESPOSTAS = "https://SEU_WEBHOOK/enviar-respostas";
+        const data = await res.json();
 
-  let provaId;
-  let fimProva;
-  let respostas = {};
-  let enviada = false;
+        if (data.erro) {
+          alert("Nenhuma prova disponível.");
+          return;
+        }
 
-  async function carregarProva() {
-    const res = await fetch(WEBHOOK_PROVA, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
+        provaId = data.prova_id;
+        document.getElementById("provaId").innerText = provaId;
 
-    const data = await res.json();
+        fimProva = new Date(data.fim);
 
-    if (data.erro) {
-      alert("Prova indisponível.");
-      return;
+        renderizarQuestoes(data.questoes);
+        iniciarTimer();
+
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao carregar a prova.");
+      }
     }
 
-    // 🔹 ID vem EXCLUSIVAMENTE do backend
-    provaId = data.prova_id;
+    function renderizarQuestoes(questoes) {
+      const container = document.getElementById("questoes");
+      container.innerHTML = "";
 
-    document.getElementById("provaId").innerText = provaId;
-    fimProva = new Date(data.fim);
+      questoes.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.className = "question";
 
-    renderizarQuestoes(data.questoes);
-    iniciarTimer();
-  }
+        const titulo = document.createElement("h3");
+        titulo.textContent = `${i + 1}. ${q.Enunciado}`;
+        div.appendChild(titulo);
 
-  function renderizarQuestoes(questoes) {
-    const container = document.getElementById("questoes");
+        if (q.Tipo_questao === "multipla" && Array.isArray(q.Alternativas)) {
+          q.Alternativas.forEach((alt) => {
+            const label = document.createElement("label");
+            label.className = "alternative";
 
-    questoes.forEach((q, i) => {
-      const div = document.createElement("div");
-      div.className = "question";
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = `q${i}`;
+            input.value = alt.texto;
 
-      let html = `<h3>${i + 1}. ${q.Enunciado}</h3>`;
+            input.addEventListener("change", () => {
+              respostas[i] = alt.texto;
+            });
 
-      if (q.Tipo_questao === "multipla" && q.Alternativas) {
-        q.Alternativas.forEach((alt) => {
-          html += `
-            <label class="alternative">
-              <input type="radio"
-                     name="q${i}"
-                     value="${alt.texto}"
-                     onchange="respostas['${i}'] = '${alt.texto}'">
-              ${alt.texto}
-            </label>`;
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(" " + alt.texto));
+
+            div.appendChild(label);
+          });
+        }
+
+        container.appendChild(div);
+      });
+    }
+
+    function iniciarTimer() {
+      const el = document.getElementById("tempo");
+
+      const interval = setInterval(() => {
+        const agora = new Date();
+        const diff = fimProva - agora;
+
+        if (diff <= 0) {
+          clearInterval(interval);
+          el.innerText = "00:00";
+          enviarProva();
+          return;
+        }
+
+        const min = Math.floor(diff / 60000);
+        const sec = Math.floor((diff % 60000) / 1000);
+
+        el.innerText =
+          String(min).padStart(2, "0") + ":" +
+          String(sec).padStart(2, "0");
+      }, 1000);
+    }
+
+    async function enviarProva() {
+      if (enviada) return;
+
+      enviada = true;
+      document.getElementById("btnEnviar").disabled = true;
+
+      try {
+        await fetch(WEBHOOK_RESPOSTAS, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prova_id: provaId,
+            respostas: respostas,
+            enviado_em: new Date().toISOString()
+          })
         });
+
+        alert("Prova enviada com sucesso.");
+
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao enviar a prova.");
       }
+    }
 
-      div.innerHTML = html;
-      container.appendChild(div);
-    });
-  }
-
-  function iniciarTimer() {
-    const el = document.getElementById("tempo");
-
-    const interval = setInterval(() => {
-      const diff = fimProva - new Date();
-
-      if (diff <= 0) {
-        clearInterval(interval);
-        el.innerText = "00:00";
-        enviarProva();
-        return;
-      }
-
-      const min = Math.floor(diff / 60000);
-      const sec = Math.floor((diff % 60000) / 1000);
-      el.innerText = `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-    }, 1000);
-  }
-
-  async function enviarProva() {
-    if (enviada) return;
-
-    enviada = true;
-    document.getElementById("btnEnviar").disabled = true;
-
-    await fetch(WEBHOOK_RESPOSTAS, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prova_id: provaId,
-        respostas,
-        enviado_em: new Date().toISOString()
-      })
-    });
-
-    alert("Prova enviada com sucesso.");
-  }
-
-  carregarProva();
-</script>
-
+    // 🚀 Inicialização
+    carregarProva();
+  </script>
 </body>
 </html>
