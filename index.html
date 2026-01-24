@@ -178,7 +178,7 @@
           ${q.Alternativas.map((alt, i) => `
             <label>
               <input type="radio" name="q${index}" value="${i}">
-              ${alt}
+              ${alt.texto}
             </label>
           `).join("")}
         </div>
@@ -190,8 +190,7 @@
 
   async function carregarProva() {
     try {
-      // ✅ FETCH corrigido para GET
-      const response = await fetch(WEBHOOK_URL); 
+      const response = await fetch(WEBHOOK_URL);
       const data = await response.json();
 
       if (!data || !data.prova_id || !data.fim || !Array.isArray(data.questoes)) {
@@ -200,7 +199,6 @@
       }
 
       document.getElementById("provaId").innerText = data.prova_id;
-
       iniciarCronometro(data.fim);
       renderizarQuestoes(data.questoes);
 
@@ -210,7 +208,6 @@
     }
   }
 
-  // Carrega a prova ao abrir a página
   carregarProva();
 </script>
 
