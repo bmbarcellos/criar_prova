@@ -68,7 +68,6 @@
       border: 1px solid #ddd;
       border-radius: 6px;
       cursor: pointer;
-      transition: 0.2s;
     }
 
     .alternative:hover {
@@ -89,13 +88,6 @@
     button:disabled {
       background-color: #999;
       cursor: not-allowed;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 12px;
-      color: #777;
-      margin: 24px 0;
     }
   </style>
 </head>
@@ -122,31 +114,19 @@
 
 </div>
 
-<footer>
-  © Universidade Federal Fluminense — Sistema de Avaliação Digital
-</footer>
-
 <script>
-  const WEBHOOK_PROVA = "https://webhook.artideia.com.br/webhook/buscar-prova-ativa";
+  const WEBHOOK_PROVA = "https://SEU_WEBHOOK/buscar-prova-ativa";
   const WEBHOOK_RESPOSTAS = "https://SEU_WEBHOOK/enviar-respostas";
 
-  const params = new URLSearchParams(window.location.search);
-  const provaId = params.get("prova");
-
+  let provaId;
   let fimProva;
   let respostas = {};
   let enviada = false;
 
-  if (!provaId) {
-    alert("ID da prova não informado.");
-    throw new Error("Prova não informada");
-  }
-
   async function carregarProva() {
     const res = await fetch(WEBHOOK_PROVA, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prova_id: provaId })
+      headers: { "Content-Type": "application/json" }
     });
 
     const data = await res.json();
@@ -156,7 +136,10 @@
       return;
     }
 
-    document.getElementById("provaId").innerText = data.prova_id;
+    // 🔹 ID vem EXCLUSIVAMENTE do backend
+    provaId = data.prova_id;
+
+    document.getElementById("provaId").innerText = provaId;
     fimProva = new Date(data.fim);
 
     renderizarQuestoes(data.questoes);
@@ -173,7 +156,7 @@
       let html = `<h3>${i + 1}. ${q.Enunciado}</h3>`;
 
       if (q.Tipo_questao === "multipla" && q.Alternativas) {
-        q.Alternativas.forEach((alt, idx) => {
+        q.Alternativas.forEach((alt) => {
           html += `
             <label class="alternative">
               <input type="radio"
@@ -226,7 +209,6 @@
     });
 
     alert("Prova enviada com sucesso.");
-    window.location.href = "https://www.uff.br";
   }
 
   carregarProva();
