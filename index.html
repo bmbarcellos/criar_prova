@@ -101,6 +101,18 @@
       text-align: center;
       margin-bottom: 16px;
     }
+
+    .btn-iniciar {
+      display: block;
+      margin: 0 auto 24px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      background: var(--uff-blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -112,9 +124,11 @@
 </header>
 
 <main>
+  <button id="btnIniciar" class="btn-iniciar">Iniciar prova</button>
+
   <div id="mensagemErro" class="erro"></div>
 
-  <div class="prova-info">
+  <div class="prova-info" style="display:none" id="infoProva">
     <div class="badge" id="provaId">Prova</div>
     <div class="timer" id="cronometro">Carregando tempo...</div>
   </div>
@@ -130,8 +144,8 @@
   const WEBHOOK_URL = "https://webhook.artideia.com.br/webhook/renderizar_prova";
   let intervaloTimer = null;
 
-  // 🔐 Controle de troca de aba
   let violacoesDeFoco = 0;
+  let violacoesFullscreen = 0;
 
   function mostrarErro(msg) {
     document.getElementById("mensagemErro").innerText = msg;
@@ -155,27 +169,17 @@
   function iniciarCronometro(fimHora) {
     const fim = criarDataHoje(fimHora);
 
-    if (!fim || isNaN(fim.getTime())) {
-      mostrarErro("Erro ao interpretar o horário final da prova.");
-      return;
-    }
-
     function atualizar() {
-      const agora = new Date();
-      const diff = fim - agora;
-
+      const diff = fim - new Date();
       if (diff <= 0) {
         document.getElementById("cronometro").innerText = "Tempo encerrado";
         clearInterval(intervaloTimer);
         return;
       }
 
-      const totalSegundos = Math.floor(diff / 1000);
-      const minutos = Math.floor(totalSegundos / 60);
-      const segundos = totalSegundos % 60;
-
+      const s = Math.floor(diff / 1000);
       document.getElementById("cronometro").innerText =
-        `Tempo restante: ${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
+        `Tempo restante: ${String(Math.floor(s / 60)).padStart(2,"0")}:${String(s % 60).padStart(2,"0")}`;
     }
 
     atualizar();
@@ -187,61 +191,57 @@
     container.innerHTML = "";
 
     questoes.forEach((q, index) => {
-      const div = document.createElement("div");
-      div.className = "questao";
-
-      div.innerHTML = `
-        <h3>${index + 1}. ${q.Enunciado}</h3>
-        <div class="alternativas">
-          ${q.Alternativas.map((alt, i) => `
-            <label>
-              <input type="radio" name="q${index}" value="${i}">
-              ${alt.texto}
-            </label>
-          `).join("")}
+      container.innerHTML += `
+        <div class="questao">
+          <h3>${index + 1}. ${q.Enunciado}</h3>
+          <div class="alternativas">
+            ${q.Alternativas.map((alt, i) => `
+              <label>
+                <input type="radio" name="q${index}" value="${i}">
+                ${alt.texto}
+              </label>
+            `).join("")}
+          </div>
         </div>
       `;
-
-      container.appendChild(div);
     });
   }
 
   async function carregarProva() {
-    try {
-      const response = await fetch(WEBHOOK_URL);
-      const json = await response.json();
+    const response = await fetch(WEBHOOK_URL);
+    const json = await response.json();
+    const data = Array.isArray(json) ? json[0] : json;
 
-      const data = Array.isArray(json) ? json[0] : json;
+    document.getElementById("provaId").innerText = data.prova_id;
+    document.getElementById("infoProva").style.display = "flex";
 
-      if (!data || !data.prova_id || !data.fim || !Array.isArray(data.questoes)) {
-        mostrarErro("Prova não encontrada ou dados inválidos.");
-        return;
-      }
-
-      document.getElementById("provaId").innerText = data.prova_id;
-      iniciarCronometro(data.fim);
-      renderizarQuestoes(data.questoes);
-
-    } catch (e) {
-      console.error(e);
-      mostrarErro("Erro ao carregar a prova.");
-    }
+    iniciarCronometro(data.fim);
+    renderizarQuestoes(data.questoes);
   }
 
-  // 🚨 Bloqueio de troca de aba / perda de foco
+  // 🔐 Troca de aba
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       violacoesDeFoco++;
-      alert(
-        "⚠️ Atenção!\n\n" +
-        "Não é permitido sair da aba da prova.\n" +
-        `Ocorrência registrada (${violacoesDeFoco}).`
-      );
-      console.warn("Troca de aba detectada:", violacoesDeFoco);
+      alert("⚠️ Não é permitido sair da aba da prova.");
     }
   });
 
-  carregarProva();
+  // 🖥️ Fullscreen
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) {
+      violacoesFullscreen++;
+      alert("⚠️ A prova deve permanecer em tela cheia.");
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  });
+
+  // ▶️ Início oficial da prova
+  document.getElementById("btnIniciar").addEventListener("click", async () => {
+    await document.documentElement.requestFullscreen();
+    document.getElementById("btnIniciar").style.display = "none";
+    carregarProva();
+  });
 </script>
 
 </body>
