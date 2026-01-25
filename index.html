@@ -121,9 +121,21 @@
 <script>
   const WEBHOOK_RENDER = "https://webhook.artideia.com.br/webhook/renderizar_prova";
   const WEBHOOK_SUBMIT = "https://webhook.artideia.com.br/webhook/submeter_prova";
+  const WEBHOOK_AUTOSAVE = "https://webhook.artideia.com.br/webhook/autosave_prova";
 
   let provaAtual = null;
   let intervaloTimer = null;
+  let intervaloAutosave = null;
+  let violacoes = [];
+
+  function registrarViolacao(tipo) {
+    violacoes.push({
+      tipo,
+      timestamp: new Date().toISOString(),
+      user_agent: navigator.userAgent
+    });
+    console.warn("Violação registrada:", tipo);
+  }
 
   function criarDataHoje(hora) {
     const [h,m,s] = hora.split(":").map(Number);
@@ -136,8 +148,8 @@
     intervaloTimer = setInterval(() => {
       const diff = fim - new Date();
       if (diff <= 0) {
+        registrarViolacao("TEMPO_ENCERRADO");
         clearInterval(intervaloTimer);
-        document.getElementById("cronometro").innerText = "Tempo encerrado";
         enviarProva();
         return;
       }
@@ -182,10 +194,30 @@
       .join("");
   }
 
-  async function enviarProva() {
+  async function autosave() {
     const payload = {
       prova_id: provaAtual.prova_id,
       respostas: coletarRespostas(),
+      violacoes,
+      timestamp: new Date().toISOString()
+    };
+
+    const hash = await gerarHashSHA256(JSON.stringify(payload));
+
+    fetch(WEBHOOK_AUTOSAVE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload, hash })
+    });
+  }
+
+  async function enviarProva() {
+    clearInterval(intervaloAutosave);
+
+    const payload = {
+      prova_id: provaAtual.prova_id,
+      respostas: coletarRespostas(),
+      violacoes,
       timestamp: new Date().toISOString(),
       user_agent: navigator.userAgent
     };
@@ -212,7 +244,22 @@
 
     iniciarCronometro(provaAtual.fim);
     renderizarQuestoes(provaAtual.questoes);
+
+    intervaloAutosave = setInterval(autosave, 60000);
   }
+
+  // 🔐 CONTROLES DE VIOLAÇÃO
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) registrarViolacao("TROCA_DE_ABA");
+  });
+
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) registrarViolacao("SAIU_FULLSCREEN");
+  });
+
+  window.addEventListener("beforeunload", () => {
+    registrarViolacao("RELOAD_OU_SAIDA");
+  });
 
   document.getElementById("btnIniciar").onclick = async () => {
     await document.documentElement.requestFullscreen();
