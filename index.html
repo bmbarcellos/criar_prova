@@ -130,8 +130,8 @@
   const WEBHOOK_URL = "https://webhook.artideia.com.br/webhook/renderizar_prova";
   let intervaloTimer = null;
 
-  // 💾 respostas + restauração
-  let respostas = JSON.parse(localStorage.getItem("respostas_prova")) || {};
+  // 🔐 Controle de troca de aba
+  let violacoesDeFoco = 0;
 
   function mostrarErro(msg) {
     document.getElementById("mensagemErro").innerText = msg;
@@ -195,11 +195,7 @@
         <div class="alternativas">
           ${q.Alternativas.map((alt, i) => `
             <label>
-              <input type="radio"
-                     name="q${index}"
-                     value="${i}"
-                     ${respostas[index] === i ? "checked" : ""}
-                     onchange="salvarResposta(${index}, ${i})">
+              <input type="radio" name="q${index}" value="${i}">
               ${alt.texto}
             </label>
           `).join("")}
@@ -210,20 +206,11 @@
     });
   }
 
-  function salvarResposta(questao, alternativa) {
-    respostas[questao] = alternativa;
-  }
-
-  // ⏱️ AUTOSAVE A CADA 60s
-  setInterval(() => {
-    localStorage.setItem("respostas_prova", JSON.stringify(respostas));
-    console.log("Autosave realizado");
-  }, 60000);
-
   async function carregarProva() {
     try {
       const response = await fetch(WEBHOOK_URL);
       const json = await response.json();
+
       const data = Array.isArray(json) ? json[0] : json;
 
       if (!data || !data.prova_id || !data.fim || !Array.isArray(data.questoes)) {
@@ -240,6 +227,19 @@
       mostrarErro("Erro ao carregar a prova.");
     }
   }
+
+  // 🚨 Bloqueio de troca de aba / perda de foco
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      violacoesDeFoco++;
+      alert(
+        "⚠️ Atenção!\n\n" +
+        "Não é permitido sair da aba da prova.\n" +
+        `Ocorrência registrada (${violacoesDeFoco}).`
+      );
+      console.warn("Troca de aba detectada:", violacoesDeFoco);
+    }
+  });
 
   carregarProva();
 </script>
